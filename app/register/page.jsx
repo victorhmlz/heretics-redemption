@@ -33,7 +33,7 @@ const RegisterForm = () => {
 
     try {
       // Enviar solicitud POST al backend con Axios
-      const response = await axios.post('http://localhost:5000/api/auth/register', {
+      const response = await axios.post('https://airdrop-primaris-server.vercel.app/api/auth/register', {
         telegramUserName,
         password,
         referralTicket,

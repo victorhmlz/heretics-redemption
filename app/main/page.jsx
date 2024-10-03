@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
-import { useReadContract, useWriteContract, useAccount, usePrepareTransactionRequest, useWaitForTransactionReceipt } from 'wagmi'
+import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { ethers } from 'ethers';
 import axios from 'axios';
 import styled from "styled-components";
@@ -69,7 +69,7 @@ export default function Main() {
 
   useEffect(() => {
     if (web3 && account_) {
-      const tokenAddress = '0x71ef451dd874084aB52c78C45111580Ff34104F8';  // Token address
+      const tokenAddress = process.env.NEXT_PUBLIC_PRIMARIS_TOKEN_ADDRESS;  // Token address
 
       const getCurrentPlayerReward = async () => {
         try {
@@ -92,7 +92,7 @@ export default function Main() {
 
   const fetchQuestStatus = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/getUser/getUser/${telegramUserName}`);
+      const response = await axios.get(`https://airdrop-primaris-server.vercel.app/api/getUser/getUser/${telegramUserName}`);
       setTelegramId(response.data.telegramUserId);
       setFollowTelegram(response.data.followTelegram);
       setOwnedReferralTicket(response.data.ownedReferralTicket);
@@ -117,7 +117,7 @@ export default function Main() {
   
   // CLAIMREWARD FUNCTION ******************************************************************
   
-  const airdropAddress = '0x2200C2FcF2315dC5c147CC34E0bf50555a9Bd95b';
+  const airdropAddress = process.env.NEXT_PUBLIC_AIRDROP_ADDRESS;
   const telegramId_ = Number(telegramId);
   const airdropAbi = AirdropAbi;
   const heriticsConverted_ = Number(heriticsConverted);

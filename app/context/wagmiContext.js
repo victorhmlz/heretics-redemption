@@ -4,13 +4,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createAppKit } from '@reown/appkit/react'; 
 import { polygon, sepolia } from '@reown/appkit/networks';
 import React from 'react'; 
-import { cookieToInitialState, WagmiProvider } from 'wagmi';
+import { WagmiProvider } from 'wagmi';
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 
 const queryClient = new QueryClient();
 
 // 1. Get projectId from https://cloud.walletconnect.com
-const projectId = 'f9eb89d91dd8f8d0e0352d2badf20f5d'; 
+const projectId = process.env.NEXT_PUBLIC_PROJECT_ID; 
 
 // 2. Create a metadata object - optional
 const metadata = {
