@@ -6,6 +6,7 @@ import { polygon, sepolia } from '@reown/appkit/networks';
 import React from 'react'; 
 import { WagmiProvider } from 'wagmi';
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
+import { injected, metaMask, safe, walletConnect } from 'wagmi/connectors'
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,12 @@ const networks = [ sepolia ]
 // 4. Create Wagmi Adapter
 const wagmiAdapter = new WagmiAdapter({
   networks,
+  connectors: [
+    injected(),
+    walletConnect({ projectId }),
+    metaMask(),
+    safe(),
+  ],
   projectId,
   ssr: true
 });
