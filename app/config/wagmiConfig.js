@@ -5,6 +5,10 @@ import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 import { polygon, sepolia } from '@reown/appkit/networks';
 
 // Obtener el projectId desde las variables de entorno
+
+/*NEXT_PUBLIC_PRIMARIS_TOKEN_ADDRESS=0x529515C23c44C0d4057e13427cb54A2f52dC5c61
+NEXT_PUBLIC_AIRDROP_ADDRESS=0xd6c0B010fbB8E33aE8fFf99c3209c18fF4eD0066 */
+
 export const projectId = process.env.NEXT_PUBLIC_PROJECT_ID;
 
 if (!projectId) {
