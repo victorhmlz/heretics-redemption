@@ -4,7 +4,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Oxanium:wght@200..800&display=swap');
 
 :root {
-  --background: #ffffff;
+  --background: #000000;
   --foreground: #171717;
   --font-principal: 'Oxanium', sans-serif;
 }

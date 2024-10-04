@@ -21,7 +21,7 @@ const metadata = {
 };
 
 // 3. Set the networks
-const networks = [ sepolia ]
+const networks = [ polygon ]
 
 // 4. Create Wagmi Adapter
 const wagmiAdapter = new WagmiAdapter({
