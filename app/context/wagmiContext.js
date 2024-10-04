@@ -1,18 +1,18 @@
-'use client'
+'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createAppKit } from '@reown/appkit/react'; 
-import { polygon, sepolia } from '@reown/appkit/networks';
+import { polygon } from '@reown/appkit/networks';
 import React from 'react'; 
 import { WagmiProvider } from 'wagmi';
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
+import { walletConnect } from 'wagmi/connectors';
 
 const queryClient = new QueryClient();
 
-// 1. Get projectId from https://cloud.walletconnect.com
-const projectId = process.env.NEXT_PUBLIC_PROJECT_ID; 
+// 1. Obtener projectId de WalletConnect Cloud
+const projectId = process.env.NEXT_PUBLIC_PROJECT_ID;
 
-// 2. Create a metadata object - optional
 const metadata = {
     name: 'Primaris Metaversalwar',
     description: 'Heretics Redemption - $PRIMARIS AIRDROP',
@@ -20,31 +20,39 @@ const metadata = {
     icons: ['https://avatars.githubusercontent.com/u/37784886']
 };
 
-// 3. Set the networks
-const networks = [ polygon ]
+// 2. Solo habilitar WalletConnect como conector
+const connectors = [];
+connectors.push(walletConnect({ projectId, metadata, showQrModal: true }));  // Muestra el modal QR
 
-// 4. Create Wagmi Adapter
-const wagmiAdapter = new WagmiAdapter({
-  networks,
+// 3. Establecer la red (Polygon o la que necesites)
+export const networks = [polygon];
+
+// 4. Crear el adaptador de Wagmi
+export const wagmiAdapter = new WagmiAdapter({
+  storage: undefined,
+  connectors,   // Solo WalletConnect
   projectId,
-  ssr: true
+  networks
 });
 
-// 5. Create modal
+export const config = wagmiAdapter.wagmiConfig;
+
+// 5. Crear AppKit con solo WalletConnect
 createAppKit({
   adapters: [wagmiAdapter],
-  networks,
   projectId,
+  networks,
   metadata,
   features: {
-    analytics: true // Optional - defaults to your Cloud configuration
+    analytics: true // Opcional
   }
-})
+});
 
+// 6. Función que provee el contexto
 export default function AppKitProvider({ children }) {
   return (
-    <WagmiProvider config={wagmiAdapter.wagmiConfig}>
+    <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     </WagmiProvider>
-  )
+  );
 }
