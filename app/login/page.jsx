@@ -96,7 +96,7 @@ const Modal = styled.div`
   color: rgba(255,255,255,0.8);
   padding: 20px;
   width: 300px; 
-  height: 80vh; 
+  height: 95vh; 
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
