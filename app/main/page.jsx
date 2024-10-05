@@ -1,8 +1,8 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useBalance } from 'wagmi'
-import { useAppKitProvider, useAppKitAccount } from '@reown/appkit/react';
+import { useAccount, useWriteContract, useReadContract, useWaitForTransactionReceipt, useBalance } from 'wagmi'
+
 import { ethers } from 'ethers';
 import axios from 'axios';
 import styled from "styled-components";
@@ -19,7 +19,6 @@ export default function Main() {
 
   const [telegramUserName, setTelegramUserName] = useState(null); 
   const currentAccount = useAccount();
-  const { walletProvider } = useAppKitProvider();
   
   const [web3, setWeb3] = useState(null);
   const [account_, setAccount] = useState(null);
@@ -116,45 +115,35 @@ export default function Main() {
   const airdropAbi = AirdropAbi;
   const heriticsConverted_ = Number(heriticsConverted);
 
-// Llamada para firmar la transacción
-const { writeContractAsync, data: transactionHash, loading: isLoading, error: error_ } = useWriteContract({
-  address: airdropAddress,
-  abi: airdropAbi,
-  functionName: 'claimTokens',
-  args: [
-    telegramId_,
-    followTelegram,
-    joinTelegramGroup,
-    joinDiscordChannel,
-    heriticsConverted_,
-    questsCompleted
-  ],
-  mode: 'prepared', // Mantén el modo 'prepared' si necesitas la firma antes de enviar
-});
+  const { 
+    data: hash,
+    error: writeError,
+    isPending, 
+    writeContract 
+  } = useWriteContract();
 
-const claimReward = async (e) => {
-  e.preventDefault();
-  console.log('Button clicked, claimReward function called');
-  try {
-    if (!walletProvider) {
-      console.error("No wallet provider detected");
-      return;
-    }
+  const submit = async (e) => {
+    e.preventDefault();
 
-    // Asegúrate de que el proveedor está activo antes de firmar
-    const transaction = await writeContractAsync();
-    console.log('Transacción enviada: ', transaction);
-  } catch (error) {
-    console.error('Error en la firma de la transacción:', error);
-  }
-};
+    writeContract({
+      address: airdropAddress,
+      abi: airdropAbi,
+      functionName: 'claimTokens',
+      args: [
+        telegramId_,
+        followTelegram,
+        joinTelegramGroup,
+        joinDiscordChannel,
+        heriticsConverted_,
+        questsCompleted
+      ],
+    });
+  } 
 
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+    hash, 
+  });
 
-// Esperar a que la transacción sea confirmada
-const { isLoading: isPending, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-  hash: transactionHash,
-  loading: isLoading
-});
 
   return (
     <ProtectedRoute>
@@ -171,12 +160,12 @@ const { isLoading: isPending, isSuccess: isConfirmed } = useWaitForTransactionRe
           joinDiscordChannel={joinDiscordChannel}
           airdropClaimed={airdropClaimed}
           questsCompleted={questsCompleted} 
-          onClaimReward={claimReward}  
+          onClaimReward={submit}  
           isPending={isPending}
-          hash={transactionHash}
-          isConfirming={isPending}
+          hash={hash}
+          isConfirming={isConfirming}
           isConfirmed={isConfirmed}
-          error={error_}
+          error={writeError}
         />
       </PageBackground>
     </ProtectedRoute>
@@ -256,13 +245,9 @@ function HomeContent({
       </OmnilexImgContainer>
       
           
-      <ClaimForm>
+      <ClaimForm onSubmit={onClaimReward}>
         <ClaimButtonCont>
-        <ClaimButton_ 
-          onClick={onClaimReward} 
-          disabled={isPending} 
-          type="button" 
-        />
+          <ClaimButton_ disabled={isPending} type="submit" />
         </ClaimButtonCont>
         {hash && <div>Transaction Hash: {hash}</div>}
         {isConfirming && <div>Waiting for confirmation...</div>} 
@@ -270,7 +255,7 @@ function HomeContent({
         {error && <div>Error: {error?.shortMessage}</div>}
       </ClaimForm>
       <RewardInfoContainer>
-        <RewardInfoPanel src={"/Assets/Images/QUEST.png"} alt="reward" $completed={questsCompleted}/>
+        <RewardInfoPanel src={"/Assets/Images/QUEST.png"} alt="reward" completed={questsCompleted}/>
         <QuestInfo>
           <Quest>Telegram Announcements: {followTelegram ? 'Complete ✅' : 'Not Complete 🔴'}</Quest>
           <Quest>Telegram Group: {joinTelegramGroup ? 'Complete ✅' : 'Not Complete 🔴'}</Quest>
