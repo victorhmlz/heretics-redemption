@@ -1,11 +1,13 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
-import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useBalance } from 'wagmi'
+import { useAppKitProvider, useAppKitAccount } from '@reown/appkit/react';
 import { ethers } from 'ethers';
 import axios from 'axios';
 import styled from "styled-components";
 import AirdropAbi from '@/app/abi/airdropAbi.json';
+import PrimarisAbi from '@/app/abi/primarisAbi.json';
 import Navbar from '@/app/components/Navbar';
 import ClaimButton_ from '@/app/components/ClaimButton';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
@@ -15,8 +17,9 @@ export default function Main() {
 
   // STATE VARIABLES
 
-  const abi = AirdropAbi;
   const [telegramUserName, setTelegramUserName] = useState(null); 
+  const currentAccount = useAccount();
+  const { walletProvider } = useAppKitProvider();
   
   const [web3, setWeb3] = useState(null);
   const [account_, setAccount] = useState(null);
@@ -67,26 +70,17 @@ export default function Main() {
 
   // RETRIEVE PRIMARIS BALANCE
 
+  const result = useBalance({
+    address: currentAccount.address,
+    token: process.env.NEXT_PUBLIC_PRIMARIS_TOKEN_ADDRESS, 
+  })
+
   useEffect(() => {
-    if (web3 && account_) {
-      const tokenAddress = process.env.NEXT_PUBLIC_PRIMARIS_TOKEN_ADDRESS;  // Token address
-
-      const getCurrentPlayerReward = async () => {
-        try {
-          const tokenContract = new ethers.Contract(tokenAddress, [
-            'function balanceOf(address owner) view returns (uint256)'
-          ], web3);
-
-          const tokenBalance = await tokenContract.balanceOf(account_);
-          setTokenBalance(ethers.formatUnits(tokenBalance, 18));
-        } catch (error) {
-          console.error('Error al obtener balance de token:', error);
-        }
-      };
-
-      getCurrentPlayerReward();
+    if (result?.data) {
+      setTokenBalance(ethers.formatUnits(result.data.value, 18));
     }
-  }, [web3, account_]);
+  }, [result?.data]);
+
 
   // GET QUEST STATUS FROM BACKEND
 
@@ -122,35 +116,45 @@ export default function Main() {
   const airdropAbi = AirdropAbi;
   const heriticsConverted_ = Number(heriticsConverted);
 
-  const { 
-    data: hash,
-    error: writeError,
-    isPending, 
-    writeContract 
-  } = useWriteContract();
+// Llamada para firmar la transacción
+const { writeContractAsync, data: transactionHash, loading: isLoading, error: error_ } = useWriteContract({
+  address: airdropAddress,
+  abi: airdropAbi,
+  functionName: 'claimTokens',
+  args: [
+    telegramId_,
+    followTelegram,
+    joinTelegramGroup,
+    joinDiscordChannel,
+    heriticsConverted_,
+    questsCompleted
+  ],
+  mode: 'prepared', // Mantén el modo 'prepared' si necesitas la firma antes de enviar
+});
 
-  const submit = async (e) => {
-    e.preventDefault();
+const claimReward = async (e) => {
+  e.preventDefault();
+  console.log('Button clicked, claimReward function called');
+  try {
+    if (!walletProvider) {
+      console.error("No wallet provider detected");
+      return;
+    }
 
-    writeContract({
-      address: airdropAddress,
-      abi: airdropAbi,
-      functionName: 'claimTokens',
-      args: [
-        telegramId_,
-        followTelegram,
-        joinTelegramGroup,
-        joinDiscordChannel,
-        heriticsConverted_,
-        questsCompleted
-      ],
-    });
-  } 
+    // Asegúrate de que el proveedor está activo antes de firmar
+    const transaction = await writeContractAsync();
+    console.log('Transacción enviada: ', transaction);
+  } catch (error) {
+    console.error('Error en la firma de la transacción:', error);
+  }
+};
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash, 
-  });
 
+// Esperar a que la transacción sea confirmada
+const { isLoading: isPending, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+  hash: transactionHash,
+  loading: isLoading
+});
 
   return (
     <ProtectedRoute>
@@ -167,12 +171,12 @@ export default function Main() {
           joinDiscordChannel={joinDiscordChannel}
           airdropClaimed={airdropClaimed}
           questsCompleted={questsCompleted} 
-          onClaimReward={submit}  
+          onClaimReward={claimReward}  
           isPending={isPending}
-          hash={hash}
-          isConfirming={isConfirming}
+          hash={transactionHash}
+          isConfirming={isPending}
           isConfirmed={isConfirmed}
-          error={writeError}
+          error={error_}
         />
       </PageBackground>
     </ProtectedRoute>
@@ -252,9 +256,13 @@ function HomeContent({
       </OmnilexImgContainer>
       
           
-      <ClaimForm onSubmit={onClaimReward}>
+      <ClaimForm>
         <ClaimButtonCont>
-          <ClaimButton_ disabled={isPending} type="submit" />
+        <ClaimButton_ 
+          onClick={onClaimReward} 
+          disabled={isPending} 
+          type="button" 
+        />
         </ClaimButtonCont>
         {hash && <div>Transaction Hash: {hash}</div>}
         {isConfirming && <div>Waiting for confirmation...</div>} 
@@ -262,7 +270,7 @@ function HomeContent({
         {error && <div>Error: {error?.shortMessage}</div>}
       </ClaimForm>
       <RewardInfoContainer>
-        <RewardInfoPanel src={"/Assets/Images/QUEST.png"} alt="reward" completed={questsCompleted}/>
+        <RewardInfoPanel src={"/Assets/Images/QUEST.png"} alt="reward" $completed={questsCompleted}/>
         <QuestInfo>
           <Quest>Telegram Announcements: {followTelegram ? 'Complete ✅' : 'Not Complete 🔴'}</Quest>
           <Quest>Telegram Group: {joinTelegramGroup ? 'Complete ✅' : 'Not Complete 🔴'}</Quest>

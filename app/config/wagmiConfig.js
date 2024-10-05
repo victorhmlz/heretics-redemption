@@ -1,8 +1,7 @@
-// config/index.js
-
 import { cookieStorage, createStorage } from '@wagmi/core';
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
-import { polygon, sepolia } from '@reown/appkit/networks';
+import { walletConnect } from 'wagmi/connectors';
+import { polygon } from '@reown/appkit/networks';
 
 // Obtener el projectId desde las variables de entorno
 
@@ -16,7 +15,22 @@ if (!projectId) {
 }
 
 // Definir las redes (networks)
-const networks = [polygon, sepolia];
+const networks = [polygon];
+
+const metadata = {
+    name: 'Primaris Metaversalwar',
+    description: 'Heretics Redemption - $PRIMARIS AIRDROP',
+    url: 'https://airdrop.metaversalwar.com',
+    icons: ['https://avatars.githubusercontent.com/u/37784886']
+};
+
+const connectors = [
+  walletConnect({
+    projectId,
+    metadata,
+    showQrModal: true,
+  })
+];
 
 // Configurar el adaptador de Wagmi
 export const wagmiAdapter = new WagmiAdapter({
@@ -24,6 +38,7 @@ export const wagmiAdapter = new WagmiAdapter({
     storage: cookieStorage
   }),
   ssr: true,
+  connectors, 
   projectId,
   networks
 });
