@@ -1,10 +1,8 @@
 import { Oxanium } from 'next/font/google';
 import './globals.css';
+import { Web3Provider } from '@/app/context/web3Context'; // Importar Web3Provider
 
 const oxanium = Oxanium({ subsets: ['latin'] });
-
-import { headers } from 'next/headers'; // agregado
-import ContextProvider from '@/app/context/wagmiContext';
 
 export const metadata = {
   title: 'Heretics Redemption',
@@ -12,12 +10,13 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
-  const cookies = headers().get('cookie');
-
   return (
     <html lang="en">
       <body className={oxanium.className}>
-        <ContextProvider cookies={cookies}>{children}</ContextProvider>
+        {/* Envolver la aplicación dentro del Web3Provider */}
+        <Web3Provider>
+          {children}
+        </Web3Provider>
       </body>
     </html>
   );

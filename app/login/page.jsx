@@ -17,7 +17,7 @@ const LoginForm = () => {
 
     try {
       // Hacer la solicitud POST al backend con Axios
-      const response = await axios.post('https://airdrop-primaris-server.vercel.app/api/auth/login', {
+      const response = await axios.post('http://localhost:5000/api/auth/login', {
         telegramUserName,
         password
       });

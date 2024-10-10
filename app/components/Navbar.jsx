@@ -3,6 +3,7 @@
 import React from "react";
 import styled from "styled-components";
 import MobileMenu from "@/app/components/Mobilemenu";
+import GenerateOrShowWalletButton from "@/app/components/CreateWalletButton"
 
 export default function Navbar() {
 
@@ -17,7 +18,9 @@ export default function Navbar() {
                 
             </LogoContainer>
             <ButtonContainer>
-                <Button_><w3m-button /></Button_>
+                <Button_>
+                    <GenerateOrShowWalletButton />
+                </Button_>
                 <MobileMenuContainer><MobileMenu /></MobileMenuContainer>
             </ButtonContainer>
         </Nav>

@@ -1,34 +1,30 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
-import { useAccount, useWriteContract, useReadContract, useWaitForTransactionReceipt, useBalance } from 'wagmi'
-
-import { ethers } from 'ethers';
+import { getPrimarisBalance } from '@/app/handlers/primarisContractHandler';
+import { useWeb3 } from '@/app/context/web3Context';
 import axios from 'axios';
 import styled from "styled-components";
-import AirdropAbi from '@/app/abi/airdropAbi.json';
-import PrimarisAbi from '@/app/abi/primarisAbi.json';
 import Navbar from '@/app/components/Navbar';
 import ClaimButton_ from '@/app/components/ClaimButton';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
+import { ClaimRequest } from '../handlers/airdropHandler';
 
 
 export default function Main() {
 
   // STATE VARIABLES
 
+  const { provider } = useWeb3();
   const [telegramUserName, setTelegramUserName] = useState(null); 
-  const currentAccount = useAccount();
   
-  const [web3, setWeb3] = useState(null);
-  const [account_, setAccount] = useState(null);
-  const [tokenBalance, setTokenBalance] = useState('0');
+  const [publicKey, setPublicKey] = useState(null);
+  const [primarisBalance, setPrimarisBalance] = useState('0');
   
   const [questData, setQuestData] = useState(null);
   const [error, setError] = useState(null);
   
   const [ownedReferralTicket, setOwnedReferralTicket] = useState("Referral Code");
-  const [telegramId, setTelegramId] = useState("0");
   const [heriticsConverted, setHeriticsConverted] = useState('Loading');
   const [followTelegram, setFollowTelegram] = useState(false);
   const [joinTelegramGroup, setJoinTelegramGroup] = useState(false);
@@ -36,57 +32,64 @@ export default function Main() {
   const [airdropClaimed, setAirdropClaimed] = useState('0');
   const [questsCompleted, setQuestsCompleted] = useState(false);
 
+  const [transactionStatus, setTransactionStatus] = useState(null);
+  const [loading, setLoading] = useState(false);
+
   // CLIENT STATUS *****************************************************************
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       const storedTelegramUserName = localStorage.getItem('telegramUserName');
       setTelegramUserName(storedTelegramUserName);
+  
+      if (storedTelegramUserName) {
+        checkWallet(storedTelegramUserName); // Llamar a checkWallet con storedTelegramUserName
+      }
     }
   }, []);
 
-  // WEB 3 INSTANCE *****************************************************************
+  const checkWallet = async (telegramUserName) => {
+
+    console.warn("USERNAMEEE EN PAGEEEE" + telegramUserName);
+    
+    try {
+      const response = await axios.post('http://localhost:5000/api/wallet/checkWallet', {
+        telegramUserName: telegramUserName,
+      });
+
+      if (response.data.publicKey) {
+        setPublicKey(response.data.publicKey);
+      } else {
+        setPublicKey(null);
+        console.warn("PUBLIC KEYYYYYYYYY " + response.data.publicKey)
+      }
+    } catch (error) {
+      console.error('Error al verificar la wallet:', error);
+    }
+  };
+
+  // RETRIEVE PRIMARIS BALANCE ******************************************************
 
   useEffect(() => {
-    const loadWeb3 = async () => {
-      if (window.ethereum) {
-        const web3Instance = new ethers.BrowserProvider(window.ethereum);
-        setWeb3(web3Instance);
-
-        try {
-          const accounts = await web3Instance.send("eth_requestAccounts", []);
-          setAccount(accounts[0]);
-        } catch (error) {
-          console.error('User denied account access');
+    const fetchBalance = async () => {
+        if (provider && provider != null && publicKey && publicKey != null) {
+            try {
+                const balanceInPrimaris = await getPrimarisBalance(publicKey, provider);
+                setPrimarisBalance(balanceInPrimaris);
+            } catch (error) {
+                console.error('Error al obtener el balance:', error);
+            }
         }
-      } else {
-        console.error('No Ethereum interface detected');
-      }
     };
 
-    loadWeb3();
-  }, []);
-
-  // RETRIEVE PRIMARIS BALANCE
-
-  const result = useBalance({
-    address: currentAccount.address,
-    token: process.env.NEXT_PUBLIC_PRIMARIS_TOKEN_ADDRESS, 
-  })
-
-  useEffect(() => {
-    if (result?.data) {
-      setTokenBalance(ethers.formatUnits(result.data.value, 18));
-    }
-  }, [result?.data]);
-
+    fetchBalance();
+  }, [provider, publicKey]);
 
   // GET QUEST STATUS FROM BACKEND
 
   const fetchQuestStatus = async () => {
     try {
-      const response = await axios.get(`https://airdrop-primaris-server.vercel.app/api/getUser/getUser/${telegramUserName}`);
-      setTelegramId(response.data.telegramUserId);
+      const response = await axios.get(`http://localhost:5000/api/getUser/getUser/${telegramUserName}`);
       setFollowTelegram(response.data.followTelegram);
       setOwnedReferralTicket(response.data.ownedReferralTicket);
       setHeriticsConverted(response.data.heriticsConverted);
@@ -110,48 +113,33 @@ export default function Main() {
   
   // CLAIMREWARD FUNCTION ******************************************************************
   
-  const airdropAddress = process.env.NEXT_PUBLIC_AIRDROP_ADDRESS;
-  const telegramId_ = Number(telegramId);
-  const airdropAbi = AirdropAbi;
-  const heriticsConverted_ = Number(heriticsConverted);
+  const handleClaim = async () => {
+    setLoading(true);
+    setError(null);
 
-  const { 
-    data: hash,
-    error: writeError,
-    isPending, 
-    writeContract 
-  } = useWriteContract();
+    try {
+        const { success, message, txHash } = await ClaimRequest(telegramUserName);
 
-  const submit = async (e) => {
-    e.preventDefault();
-
-    writeContract({
-      address: airdropAddress,
-      abi: airdropAbi,
-      functionName: 'claimTokens',
-      args: [
-        telegramId_,
-        followTelegram,
-        joinTelegramGroup,
-        joinDiscordChannel,
-        heriticsConverted_,
-        questsCompleted
-      ],
-    });
-  } 
-
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash, 
-  });
-
+        if (success) {
+            setTransactionStatus(`Successful claim!`);
+        } else {
+            setTransactionStatus(`Failed claim: ${message}`);
+        }
+    } catch (error) {
+        console.error('Claiming error:', error);
+        setError('Claiming error, please try again.');
+    } finally {
+        setLoading(false);
+    }
+};
 
   return (
     <ProtectedRoute>
       <PageBackground>
-        <Navbar />
+        <Navbar telegramUserName={telegramUserName}/>
         <HomeContent 
           questData={questData} 
-          tokenBalance={tokenBalance} 
+          tokenBalance={primarisBalance} 
           telegramUserName={telegramUserName}
           ownedReferralTicket={ownedReferralTicket}
           heriticsConverted={heriticsConverted}
@@ -160,12 +148,11 @@ export default function Main() {
           joinDiscordChannel={joinDiscordChannel}
           airdropClaimed={airdropClaimed}
           questsCompleted={questsCompleted} 
-          onClaimReward={submit}  
-          isPending={isPending}
-          hash={hash}
-          isConfirming={isConfirming}
-          isConfirmed={isConfirmed}
-          error={writeError}
+
+          handleClaim={handleClaim}
+          loading={loading} 
+          transactionStatus={transactionStatus}
+          error={error}
         />
       </PageBackground>
     </ProtectedRoute>
@@ -182,12 +169,11 @@ function HomeContent({
   joinDiscordChannel,
   airdropClaimed,
   questsCompleted,
-  onClaimReward,
-  isPending,
-  hash,
-  isConfirming,
-  isConfirmed,
-  error
+  handleClaim,
+  loading,
+  transactionStatus,
+  error,
+
 }) {
   const [copySuccess, setCopySuccess] = useState('');
 
@@ -235,8 +221,12 @@ function HomeContent({
         <Balance>Claimed Times: {airdropClaimed}</Balance>
         <Balance>Aditional Reward {aditionalRewardPercentage + '%'}</Balance>
         <ReferalCode>Referral Code: {ownedReferralTicket ? ownedReferralTicket : 'Loading...'}
-          <CopyButton onClick={copyToClipboard}>
-            {copySuccess ? copySuccess : 'Copy'}
+        <CopyButton onClick={copyToClipboard}>
+            {copySuccess ? (
+              <img src={"/Assets/Buttons/checkIcon.png"} alt="Check Icon" />
+            ) : (
+              <img src={"/Assets/Buttons/copyIcon.png"} alt="Copy Icon" />
+            )}
           </CopyButton>
         </ReferalCode>
       </Userdata>
@@ -245,15 +235,14 @@ function HomeContent({
       </OmnilexImgContainer>
       
           
-      <ClaimForm onSubmit={onClaimReward}>
+      <ClaimContainer>
         <ClaimButtonCont>
-          <ClaimButton_ disabled={isPending} type="submit" />
+          <ClaimButton_ onClick={handleClaim} disabled={loading}/>
         </ClaimButtonCont>
-        {hash && <div>Transaction Hash: {hash}</div>}
-        {isConfirming && <div>Waiting for confirmation...</div>} 
-        {isConfirmed && <div>Reward claimed!</div>} 
-        {error && <div>Error: {error?.shortMessage}</div>}
-      </ClaimForm>
+          {loading && <div>Waiting for confirmation...</div>}
+          {transactionStatus && <div>{transactionStatus}</div>}
+          {error && <div style={{ color: 'red' }}>Error: {error}</div>}
+      </ClaimContainer>
       <RewardInfoContainer>
         <RewardInfoPanel src={"/Assets/Images/QUEST.png"} alt="reward" completed={questsCompleted}/>
         <QuestInfo>
@@ -268,7 +257,7 @@ function HomeContent({
   );
 }
 
-const ClaimForm = styled.form`
+const ClaimContainer = styled.div`
   display: flex;
   flex-direction: column;
   padding: 10px;
@@ -294,7 +283,7 @@ const Userdata = styled.div`
 
 // Estilo para el nombre de usuario
 const Username = styled.div`
-  font-size: 24px; /* Tamaño más grande para el nombre de usuario */
+  font-size: 24px; 
   font-weight: bold;
   color: #8D51CF;
   margin-bottom: 8px;
@@ -302,12 +291,12 @@ const Username = styled.div`
 
 // Estilo para el balance de $PRIMARIS
 const Balance = styled.div`
-  font-size: 18px; /* Tamaño más pequeño para el balance */
-  color: #cccccc; /* Color más tenue */
+  font-size: 18px; 
+  color: #cccccc; 
 `;
 
 const ReferalCode = styled.div`
-  font-size: 16px; /* Tamaño más pequeño para el balance */
+  font-size: 16px; 
   color: #8D51CF;
   display: inline-block;
 `;
@@ -315,10 +304,10 @@ const ReferalCode = styled.div`
 const CopyButton = styled.button`
   margin-left: 8px;
   font-size: 10px;
-  background-color: rgba(0,0,0,0);
-  border: 1px solid #8D51CF;
+  width: 25px;
+  height: auto;
+  background-color: none;
   border-radius: 2px;
-  color: #8D51CF;
   padding: 5px 5px;
   cursor: pointer;
 `;
@@ -328,7 +317,7 @@ const PageBackground = styled.div`
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start; /* Cambiado de center a flex-start para que el contenido comience después del navbar */
+    justify-content: flex-start; 
     width: 100%;
     min-height: 100vh;
 
@@ -342,8 +331,8 @@ const OmnilexContainer = styled.div`
   justify-content: center;
   align-items: center;
   flex-direction: column;
-  width: 100%; /* Cambiado a 100% para evitar desbordamientos */
-  height: auto; /* Ajustamos para que crezca en lugar de tener una altura fija */
+  width: 100%; 
+  height: auto; 
   padding: 20px; 
   box-sizing: border-box; 
   position: relative;
@@ -357,13 +346,13 @@ const TitleImgContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 100%; /* Asegura que ocupe todo el ancho disponible */
-  height: auto; /* Hacemos que crezca automáticamente */
+  width: 100%; 
+  height: auto; 
   padding: 0;
   position: relative;
 
   @media (max-width: 479px) {
-    width: 100%; /* Para móviles, que ocupe el 100% del ancho */
+    width: 100%; 
   }
 `;
 
@@ -378,13 +367,13 @@ const OmnilexImgContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 100%; /* Asegura que ocupe todo el ancho disponible */
-  height: auto; /* Hacemos que crezca automáticamente */
+  width: 100%; 
+  height: auto; 
   padding: 0;
   position: relative;
 
   @media (max-width: 479px) {
-    width: 100%; /* Para móviles, que ocupe el 100% del ancho */
+    width: 100%; 
   }
 `;
 
@@ -451,7 +440,7 @@ const QuestInfo = styled.div`
   justify-content: center;
   align-items: left;
   color: white;
-  z-index: 2; /* Superponer sobre la imagen */
+  z-index: 2; 
 `;
 
 // Se ajustan los estilos para los textos de las quests
