@@ -1,12 +1,10 @@
-import { ethers } from 'ethers';
-import { formatUnits } from 'ethers'
 import axios from 'axios';
 
 // ESTIMATE GAS TO SEND PRIMARIS TOKEN ********************************************************************************
 
 export const estimateAirdropGas = async (telegramUserName) => {
     try {
-        const response = await axios.post('http://localhost:5000/api/transaction/gasClaim', {
+        const response = await axios.post('https://airdrop-primaris-server.vercel.app/api/transaction/gasClaim', {
             telegramUserName
         });
 
@@ -27,7 +25,7 @@ export const estimateAirdropGas = async (telegramUserName) => {
 
 export const ClaimRequest = async (telegramUserName) => {
     try {
-        const response = await axios.post('http://localhost:5000/api/transaction/claim', {
+        const response = await axios.post('https://airdrop-primaris-server.vercel.app/api/transaction/claim', {
             telegramUserName
         });
 

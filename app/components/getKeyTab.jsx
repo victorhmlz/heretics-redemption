@@ -91,7 +91,7 @@ const GetKeyTab = ({ telegramUserName, action }) => {
 
     try {
 
-        const response = await axios.post('http://localhost:5000/api/wallet/getKey', {
+        const response = await axios.post('https://airdrop-primaris-server.vercel.app/api/wallet/getKey', {
             telegramUserName,
             password
         });

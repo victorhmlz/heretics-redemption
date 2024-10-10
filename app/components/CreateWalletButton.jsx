@@ -35,7 +35,7 @@ const GenerateOrShowWalletButton = () => {
     
     try {
       // Verificar si el usuario ya tiene una wallet en el backend
-      const response = await axios.post('http://localhost:5000/api/wallet/checkWallet', {
+      const response = await axios.post('https://airdrop-primaris-server.vercel.app/api/wallet/checkWallet', {
         telegramUserName: telegramUserName, // Cambia el valor por el username adecuado
       });
 
@@ -77,7 +77,7 @@ const GenerateOrShowWalletButton = () => {
     console.warn("EL USERNAMEEEEEEEEEEEEE" + telegramUserName);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/wallet/createWallet', {
+      const response = await axios.post('https://airdrop-primaris-server.vercel.app/api/wallet/createWallet', {
         telegramUserName: telegramUserName, 
       });
 

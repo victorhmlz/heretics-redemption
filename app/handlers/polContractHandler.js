@@ -1,15 +1,10 @@
-import { ethers } from 'ethers';
-import { formatUnits } from 'ethers'
 import axios from 'axios';
-import PrimarisAbi from '@/app/abi/primarisAbi.json'; 
-
-const primarisTokenAddress = process.env.NEXT_PUBLIC_PRIMARIS_TOKEN_ADDRESS;
 
 // ESTIMATE GAS TO SEND PRIMARIS TOKEN ********************************************************************************
 
 export const estimateGasPol = async (telegramUserName, recipient, amount) => {
     try {
-        const response = await axios.post('http://localhost:5000/api/transaction/gas', {
+        const response = await axios.post('https://airdrop-primaris-server.vercel.app/api/transaction/gas', {
             telegramUserName,
             recipientAddress: recipient,
             amount
@@ -32,7 +27,7 @@ export const estimateGasPol = async (telegramUserName, recipient, amount) => {
 
 export const sendTransactionPol = async (telegramUserName, recipient, amount) => {
     try {
-        const response = await axios.post('http://localhost:5000/api/transaction/send', {
+        const response = await axios.post('https://airdrop-primaris-server.vercel.app/api/transaction/send', {
             telegramUserName,
             recipientAddress: recipient,
             amount

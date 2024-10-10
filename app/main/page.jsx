@@ -53,7 +53,7 @@ export default function Main() {
     console.warn("USERNAMEEE EN PAGEEEE" + telegramUserName);
     
     try {
-      const response = await axios.post('http://localhost:5000/api/wallet/checkWallet', {
+      const response = await axios.post('https://airdrop-primaris-server.vercel.app/api/wallet/checkWallet', {
         telegramUserName: telegramUserName,
       });
 
@@ -89,7 +89,7 @@ export default function Main() {
 
   const fetchQuestStatus = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/getUser/getUser/${telegramUserName}`);
+      const response = await axios.get(`https://airdrop-primaris-server.vercel.app/api/getUser/getUser/${telegramUserName}`);
       setFollowTelegram(response.data.followTelegram);
       setOwnedReferralTicket(response.data.ownedReferralTicket);
       setHeriticsConverted(response.data.heriticsConverted);

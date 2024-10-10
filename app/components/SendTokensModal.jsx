@@ -13,7 +13,7 @@ const SendTokensModal = ({ telegramUserName, sender, recipient, amount}) => {
     const handleEstimateGas = async () => {
         try {
             setLoading(true);
-            const response = await axios.post('http://localhost:5000/api/wallet/estimateGas', {
+            const response = await axios.post('https://airdrop-primaris-server.vercel.app/api/wallet/estimateGas', {
                 telegramUserName,
                 recipientAddress: recipient,
                 amount
@@ -33,7 +33,7 @@ const SendTokensModal = ({ telegramUserName, sender, recipient, amount}) => {
     const handleSendTransaction = async () => {
         try {
             setLoading(true);
-            const response = await axios.post('http://localhost:5000/api/wallet/sendTransaction', {
+            const response = await axios.post('https://airdrop-primaris-server.vercel.app/api/wallet/sendTransaction', {
                 telegramUserName,
                 recipientAddress: recipient,
                 amount
