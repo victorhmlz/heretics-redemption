@@ -34,7 +34,7 @@ export const getPrimarisBalance = async (publicKey, provider) => {
 
 export const estimateGas = async (telegramUserName, recipient, amount) => {
     try {
-        const response = await axios.post('https://airdrop-primaris-server.vercel.app/api/transaction/gasPrimaris', {
+        const response = await axios.post('http://airdrop-primaris-server.vercel.app/api/transaction/gasPrimaris', {
             telegramUserName,
             recipientAddress: recipient,
             amount
